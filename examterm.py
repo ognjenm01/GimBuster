@@ -1,4 +1,4 @@
-from datetime import datetime
+from util import timestamp
 
 class ExamTerm:
     def __init__(self, date, time, is_available, timestamp):
@@ -15,3 +15,11 @@ class ExamTerm:
     
     def fancyprint(self):
         return self.date + " - " + self.time + " Poslednji put azurirano: " + str(self.timestamp)
+    
+    def reserve(self):
+        self.is_available = False
+        self.timestamp = timestamp()
+
+    def free(self):
+        self.is_available = True
+        self.timestamp = timestamp()
