@@ -1,17 +1,19 @@
 from gimadapter import get_terms
 import dbadapter
 from telegram_notifier import set_config_options
-from telegram_notifier import send_message
+from telegram_notifier import send_message_mod
 import os
 from dotenv import load_dotenv
 
 load_dotenv()
 incoming_terms = get_terms()
-current_terms = dbadapter.get_all()
+current_terms = dbadapter.get_all_terms()
 set_config_options(chat_id=os.getenv('SINGLE_CHAT_ID'), token=os.getenv('BOT_API'))
 
 def notify(msg):
-    send_message(msg, no_escape=True)
+    for subscription in dbadapter.get_all_subscriptions():
+        if subscription.enabled:
+            send_message_mod(msg, no_escape=True, chat_id=subscription.chat_id)
 
 def equal_by_datetime(term1, list_of_terms):
     for term2 in list_of_terms:
@@ -28,7 +30,7 @@ def equal_by_availability(term1, list_of_terms):
 #Scenario - potpuno nov termin
 for iterm in incoming_terms:
     if equal_by_datetime(iterm, current_terms) is False:
-        dbadapter.insert(iterm)
+        dbadapter.insert_term(iterm)
         notify("""Obavestenje!
 Izbacen je novi termin za grafiku: {0}""".format(iterm.date + " - " + iterm.time))
 
@@ -36,7 +38,7 @@ Izbacen je novi termin za grafiku: {0}""".format(iterm.date + " - " + iterm.time
 for cterm in current_terms:
     if equal_by_datetime(cterm, incoming_terms) is False and cterm.is_available:
         cterm.reserve()
-        dbadapter.update(cterm, False)  
+        dbadapter.update_term(cterm, False)  
         notify("""Obavestenje!
 Termin u {0} je postao zauzet!""".format(cterm.date + " - " + cterm.time))    
     
@@ -44,7 +46,7 @@ Termin u {0} je postao zauzet!""".format(cterm.date + " - " + cterm.time))
 for cterm in current_terms:
     if equal_by_availability(cterm, incoming_terms) is True:
         cterm.free()
-        dbadapter.update(cterm, True)
+        dbadapter.update_term(cterm, True)
         notify("""Obavestenje!
 Termin u {0} je postao slobodan!""".format(cterm.date + " - " + cterm.time))         
 
